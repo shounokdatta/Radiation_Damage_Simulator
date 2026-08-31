@@ -1,7 +1,7 @@
 # ============================================================
 # RADIATION DAMAGE SIMULATOR
 # ============================================================
-#s
+#
 # Calculates:
 #
 #   1. Depletion width
@@ -11,8 +11,10 @@
 #
 # Produces:
 #
-#   Capacitance and Leakage Current
-#   vs Reverse Bias Voltage
+#   1. Capacitance vs Reverse Bias Voltage
+#   2. Leakage Current vs Reverse Bias Voltage
+#   3. Capacitance and Leakage Current
+#      vs Reverse Bias Voltage
 #
 # ============================================================
 
@@ -27,7 +29,12 @@ import config
 from materials.silicon import Silicon
 from physics.detector import Detector
 from detector.leakage_current import LeakageCurrent
-from analysis.plots import plot_combined
+
+from analysis.plots import (
+    plot_capacitance_vs_reverse_bias,
+    plot_leakage_current_vs_reverse_bias,
+    plot_combined
+)
 
 
 # ============================================================
@@ -105,6 +112,7 @@ for width in depletion_width:
     current_list.append(current)
 
 
+# Convert leakage current list to NumPy array
 current_list = np.array(
     current_list
 )
@@ -249,6 +257,33 @@ print("=" * 65)
 # ============================================================
 # 11. PLOT RESULTS
 # ============================================================
+
+# ------------------------------------------------------------
+# GRAPH 1
+# Capacitance vs Reverse Bias
+# ------------------------------------------------------------
+
+plot_capacitance_vs_reverse_bias(
+    reverse_voltage,
+    capacitance
+)
+
+
+# ------------------------------------------------------------
+# GRAPH 2
+# Leakage Current vs Reverse Bias
+# ------------------------------------------------------------
+
+plot_leakage_current_vs_reverse_bias(
+    reverse_voltage,
+    current_list
+)
+
+
+# ------------------------------------------------------------
+# GRAPH 3
+# Capacitance and Leakage Current vs Reverse Bias
+# ------------------------------------------------------------
 
 plot_combined(
     reverse_voltage,

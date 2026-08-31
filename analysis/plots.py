@@ -5,6 +5,103 @@
 import matplotlib.pyplot as plt
 
 
+# ============================================================
+# 1. CAPACITANCE VS REVERSE BIAS
+# ============================================================
+
+def plot_capacitance_vs_reverse_bias(
+    reverse_voltage,
+    capacitance
+):
+
+    plt.figure(
+        figsize=(10, 6)
+    )
+
+    plt.plot(
+        reverse_voltage,
+        capacitance * 1e12,
+        color="blue",
+        linewidth=3
+    )
+
+    plt.xlabel(
+        "Reverse Bias Voltage (V)",
+        fontsize=12
+    )
+
+    plt.ylabel(
+        "Capacitance (pF)",
+        fontsize=12
+    )
+
+    plt.title(
+        "Capacitance vs Reverse Bias Voltage",
+        fontsize=14
+    )
+
+    plt.grid(
+        True,
+        linestyle="--",
+        alpha=0.6
+    )
+
+    plt.tight_layout()
+
+    plt.show()
+
+
+# ============================================================
+# 2. LEAKAGE CURRENT VS REVERSE BIAS
+# ============================================================
+
+def plot_leakage_current_vs_reverse_bias(
+    reverse_voltage,
+    current_list
+):
+
+    plt.figure(
+        figsize=(10, 6)
+    )
+
+    plt.plot(
+        reverse_voltage,
+        current_list * 1e3,
+        color="red",
+        linewidth=3
+    )
+
+    plt.xlabel(
+        "Reverse Bias Voltage (V)",
+        fontsize=12
+    )
+
+    plt.ylabel(
+        "Leakage Current (mA)",
+        fontsize=12
+    )
+
+    plt.title(
+        "Leakage Current vs Reverse Bias Voltage",
+        fontsize=14
+    )
+
+    plt.grid(
+        True,
+        linestyle="--",
+        alpha=0.6
+    )
+
+    plt.tight_layout()
+
+    plt.show()
+
+
+# ============================================================
+# 3. CAPACITANCE AND LEAKAGE CURRENT
+#    VS REVERSE BIAS
+# ============================================================
+
 def plot_combined(
     reverse_voltage,
     capacitance,
