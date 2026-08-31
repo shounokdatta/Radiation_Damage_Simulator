@@ -1,27 +1,33 @@
-import numpy as np
+# ============================================================
+# PLOTTING FUNCTIONS
+# ============================================================
+
 import matplotlib.pyplot as plt
 
 
 def plot_combined(
     reverse_voltage,
-    capacitance_list,
+    capacitance,
     current_list
 ):
 
-    ############################################################
-    # COMBINED PLOT:
-    # Capacitance & Leakage Current vs Reverse Bias
-    ############################################################
+    # ========================================================
+    # CREATE FIGURE
+    # ========================================================
 
-    fig, ax1 = plt.subplots(figsize=(9, 6))
+    fig, ax1 = plt.subplots(
+        figsize=(10, 6)
+    )
 
-    # ----------------------------------------------------------
-    # LEFT Y-AXIS : CAPACITANCE
-    # ----------------------------------------------------------
 
-    ax1.plot(
+    # ========================================================
+    # CAPACITANCE
+    # LEFT Y-AXIS
+    # ========================================================
+
+    line1 = ax1.plot(
         reverse_voltage,
-        np.array(capacitance_list) * 1e12,
+        capacitance * 1e12,
         color="blue",
         linewidth=3,
         label="Capacitance"
@@ -43,18 +49,28 @@ def plot_combined(
         labelcolor="blue"
     )
 
-    ax1.grid(True)
+
+    # ========================================================
+    # GRID
+    # ========================================================
+
+    ax1.grid(
+        True,
+        linestyle="--",
+        alpha=0.6
+    )
 
 
-    # ----------------------------------------------------------
-    # RIGHT Y-AXIS : LEAKAGE CURRENT
-    # ----------------------------------------------------------
+    # ========================================================
+    # LEAKAGE CURRENT
+    # RIGHT Y-AXIS
+    # ========================================================
 
     ax2 = ax1.twinx()
 
-    ax2.plot(
+    line2 = ax2.plot(
         reverse_voltage,
-        np.array(current_list) * 1e3,
+        current_list * 1e3,
         color="red",
         linewidth=3,
         label="Leakage Current"
@@ -72,33 +88,37 @@ def plot_combined(
     )
 
 
-    # ----------------------------------------------------------
+    # ========================================================
     # COMBINED LEGEND
-    # ----------------------------------------------------------
+    # ========================================================
 
-    lines1, labels1 = (
-        ax1.get_legend_handles_labels()
-    )
+    lines = line1 + line2
 
-    lines2, labels2 = (
-        ax2.get_legend_handles_labels()
-    )
+    labels = [
+        line.get_label()
+        for line in lines
+    ]
 
     ax1.legend(
-        lines1 + lines2,
-        labels1 + labels2,
+        lines,
+        labels,
         loc="best"
     )
 
 
-    # ----------------------------------------------------------
+    # ========================================================
     # TITLE
-    # ----------------------------------------------------------
+    # ========================================================
 
     plt.title(
         "Capacitance and Leakage Current vs Reverse Bias Voltage",
         fontsize=14
     )
+
+
+    # ========================================================
+    # FINAL SETTINGS
+    # ========================================================
 
     plt.tight_layout()
 

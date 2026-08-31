@@ -1,6 +1,25 @@
 # ============================================================
 # RADIATION DAMAGE SIMULATOR
 # ============================================================
+#s
+# Calculates:
+#
+#   1. Depletion width
+#   2. Capacitance
+#   3. Radiation-induced leakage current
+#   4. Full depletion voltage
+#
+# Produces:
+#
+#   Capacitance and Leakage Current
+#   vs Reverse Bias Voltage
+#
+# ============================================================
+
+
+# ============================================================
+# IMPORTS
+# ============================================================
 
 import numpy as np
 import config
@@ -8,19 +27,18 @@ import config
 from materials.silicon import Silicon
 from physics.detector import Detector
 from detector.leakage_current import LeakageCurrent
-
 from analysis.plots import plot_combined
 
 
 # ============================================================
-# CREATE SILICON MATERIAL
+# 1. CREATE SILICON MATERIAL
 # ============================================================
 
 silicon = Silicon()
 
 
 # ============================================================
-# CREATE DETECTOR
+# 2. CREATE DETECTOR
 # ============================================================
 
 detector = Detector(
@@ -33,7 +51,7 @@ detector = Detector(
 
 
 # ============================================================
-# CREATE LEAKAGE CURRENT MODEL
+# 3. CREATE LEAKAGE CURRENT MODEL
 # ============================================================
 
 leakage_model = LeakageCurrent(
@@ -42,7 +60,7 @@ leakage_model = LeakageCurrent(
 
 
 # ============================================================
-# REVERSE BIAS VOLTAGE
+# 4. CREATE REVERSE BIAS VOLTAGE ARRAY
 # ============================================================
 
 reverse_voltage = np.linspace(
@@ -53,7 +71,7 @@ reverse_voltage = np.linspace(
 
 
 # ============================================================
-# DEPLETION WIDTH
+# 5. CALCULATE DEPLETION WIDTH
 # ============================================================
 
 depletion_width = detector.depletion_width(
@@ -62,7 +80,7 @@ depletion_width = detector.depletion_width(
 
 
 # ============================================================
-# CAPACITANCE
+# 6. CALCULATE CAPACITANCE
 # ============================================================
 
 capacitance = detector.capacitance(
@@ -71,18 +89,29 @@ capacitance = detector.capacitance(
 
 
 # ============================================================
-# LEAKAGE CURRENT
+# 7. CALCULATE LEAKAGE CURRENT
 # ============================================================
 
-current = leakage_model.calculate(
-    fluence=config.FINAL_FLUENCE,
-    area_cm2=config.AREA_CM2,
-    thickness_cm=detector.thickness_cm
+current_list = []
+
+for width in depletion_width:
+
+    current = leakage_model.calculate(
+        fluence=config.FINAL_FLUENCE,
+        area_cm2=config.AREA_CM2,
+        thickness_cm=width
+    )
+
+    current_list.append(current)
+
+
+current_list = np.array(
+    current_list
 )
 
 
 # ============================================================
-# FULL DEPLETION VOLTAGE
+# 8. FULL DEPLETION VOLTAGE
 # ============================================================
 
 full_depletion_voltage = (
@@ -91,7 +120,7 @@ full_depletion_voltage = (
 
 
 # ============================================================
-# FINAL VALUES
+# 9. FINAL VALUES
 # ============================================================
 
 final_depletion_width_um = (
@@ -102,7 +131,9 @@ final_capacitance_pf = (
     capacitance[-1] * 1e12
 )
 
-final_current_a = current
+final_current_a = (
+    current_list[-1]
+)
 
 final_current_ma = (
     final_current_a * 1e3
@@ -110,61 +141,78 @@ final_current_ma = (
 
 
 # ============================================================
-# TERMINAL OUTPUT
+# 10. DISPLAY RESULTS
 # ============================================================
 
 print()
 
-print("=" * 60)
-print("       RADIATION DAMAGE SIMULATOR")
-print("=" * 60)
+print("=" * 65)
+print("                 RADIATION DAMAGE SIMULATOR")
+print("=" * 65)
 
 print()
 
+print("DETECTOR PARAMETERS")
+print("-" * 65)
+
 print(
-    f"Material       : {silicon.name}"
+    f"Material               : {silicon.name}"
 )
 
 print(
-    f"Thickness      : "
+    f"Thickness              : "
     f"{config.THICKNESS_UM:.1f} µm"
 )
 
 print(
-    f"Area           : "
-    f"{config.AREA_CM2:.1f} cm²"
+    f"Area                   : "
+    f"{config.AREA_CM2:.2f} cm²"
 )
 
 print(
-    f"Temperature    : "
+    f"Temperature            : "
     f"{config.TEMPERATURE_K:.2f} K"
 )
 
 print()
 
+print("RADIATION PARAMETERS")
+print("-" * 65)
+
 print(
-    f"Initial fluence : "
+    f"Initial fluence        : "
     f"{config.INITIAL_FLUENCE:.2e} neq/cm²"
 )
 
 print(
-    f"Final fluence   : "
+    f"Final fluence          : "
     f"{config.FINAL_FLUENCE:.2e} neq/cm²"
 )
 
-print()
-
 print(
-    f"Effective doping : "
-    f"{config.N_EFF:.2e} cm^-3"
-)
-
-print(
-    f"Damage constant  : "
+    f"Damage constant        : "
     f"{config.ALPHA:.2e} A/cm"
 )
 
 print()
+
+print("JUNCTION PARAMETERS")
+print("-" * 65)
+
+print(
+    f"Built-in voltage       : "
+    f"{config.V_BI:.2f} V"
+)
+
+print(
+    f"Effective doping       : "
+    f"{config.N_EFF:.2e} cm⁻³"
+)
+
+print()
+
+print("SIMULATION RESULTS")
+print("-" * 65)
 
 print(
     f"Full depletion voltage : "
@@ -193,23 +241,14 @@ print(
 
 print()
 
+print("=" * 65)
 print("Simulation complete.")
-
-print("=" * 60)
+print("=" * 65)
 
 
 # ============================================================
-# COMBINED PLOT
+# 11. PLOT RESULTS
 # ============================================================
-
-# Leakage current is constant with reverse bias in the
-# simple I = alpha × fluence × volume model.
-
-current_list = np.full(
-    len(reverse_voltage),
-    current
-)
-
 
 plot_combined(
     reverse_voltage,

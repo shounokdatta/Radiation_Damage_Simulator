@@ -1,17 +1,18 @@
 # ============================================================
-# LEAKAGE CURRENT MODEL
+# RADIATION-INDUCED LEAKAGE CURRENT
 # ============================================================
 
 
 class LeakageCurrent:
 
     def __init__(self, alpha):
-        """
-        alpha:
-            Radiation damage constant (A/cm)
-        """
 
         self.alpha = alpha
+
+
+    # ========================================================
+    # CALCULATE LEAKAGE CURRENT
+    # ========================================================
 
     def calculate(
         self,
@@ -19,27 +20,24 @@ class LeakageCurrent:
         area_cm2,
         thickness_cm
     ):
-        """
-        Calculate radiation-induced leakage current.
 
-        Formula:
+        # Depleted detector volume:
+        #
+        # V = Area × Depletion Width
 
-            I = alpha × Phi × V
+        depleted_volume = (
+            area_cm2
+            * thickness_cm
+        )
 
-        where:
-
-            I     = leakage current (A)
-            alpha = radiation damage constant (A/cm)
-            Phi   = radiation fluence (neq/cm²)
-            V     = detector volume (cm³)
-        """
-
-        volume = area_cm2 * thickness_cm
+        # Radiation-induced leakage current:
+        #
+        # I = alpha × fluence × volume
 
         current = (
             self.alpha
             * fluence
-            * volume
+            * depleted_volume
         )
 
         return current

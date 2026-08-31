@@ -3,33 +3,44 @@
 # ============================================================
 
 
-class RadiationDamage:
+def radiation_damage_current(
+    alpha,
+    fluence,
+    area_cm2,
+    depletion_width_cm
+):
+    """
+    Calculate radiation-induced leakage current.
 
-    def __init__(self, alpha):
+    Parameters
+    ----------
+    alpha : float
+        Radiation damage constant in A/cm.
 
-        self.alpha = alpha
+    fluence : float
+        Radiation fluence in neq/cm^2.
 
+    area_cm2 : float
+        Detector area in cm^2.
 
-    # ========================================================
-    # LEAKAGE CURRENT AT FULL DEPLETION
-    # ========================================================
+    depletion_width_cm : float
+        Depleted detector thickness in cm.
 
-    def leakage_current(
-        self,
-        fluence,
-        area_cm2,
-        thickness_cm
-    ):
+    Returns
+    -------
+    float
+        Leakage current in amperes.
+    """
 
-        volume = (
-            area_cm2
-            * thickness_cm
-        )
+    depleted_volume = (
+        area_cm2
+        * depletion_width_cm
+    )
 
-        current = (
-            self.alpha
-            * fluence
-            * volume
-        )
+    current = (
+        alpha
+        * fluence
+        * depleted_volume
+    )
 
-        return current
+    return current
