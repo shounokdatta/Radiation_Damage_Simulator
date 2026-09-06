@@ -31,7 +31,21 @@
 
 import csv
 import inspect
+import sys
 from pathlib import Path
+
+# ------------------------------------------------------------
+# Add the project root to Python's import path.
+#
+# This makes the GUI work both with:
+#     python -m gui.app
+# and with:
+#     python gui/app.py
+# ------------------------------------------------------------
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
 import tkinter as tk
 from tkinter import ttk
@@ -1936,6 +1950,8 @@ class RadiationDamageGUI:
 
             result["capacitance"] * 1e12,
 
+            color="blue",
+
             linewidth=2.5,
 
             label="Capacitance"
@@ -1946,6 +1962,8 @@ class RadiationDamageGUI:
             result["voltage"],
 
             result["leakage"] * 1e3,
+
+            color="red",
 
             linewidth=2.5,
 
