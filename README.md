@@ -1,33 +1,26 @@
-Radiation Damage Simulator
+# Radiation Damage Simulator
 
 A Python-based Silicon Detector Radiation Damage Simulator with an interactive GUI.
 
-Features
+## Features
 
 The simulator provides:
 
-Capacitance vs Reverse Bias
+- Capacitance vs Reverse Bias
+- Leakage Current vs Reverse Bias
+- Capacitance and Leakage Current vs Reverse Bias
+- Capacitance vs Reverse Bias for Different Doping Concentrations
+- Leakage Current vs Reverse Bias for Different Doping Concentrations
+- Capacitance vs Reverse Bias for Different Detector Thicknesses
+- Leakage Current vs Reverse Bias for Different Detector Thicknesses
+- Capacitance vs Reverse Bias for Different Operating Temperatures
+- Leakage Current vs Reverse Bias for Different Operating Temperatures
 
-Leakage Current vs Reverse Bias
+The GUI reads the current values entered by the user and recalculates the simulation when **UPDATE GRAPH** is pressed. An optional Auto Update mode is also available.
 
-Capacitance and Leakage Current vs Reverse Bias
+## Project Structure
 
-Capacitance vs Reverse Bias for Different Doping Concentrations
-
-Leakage Current vs Reverse Bias for Different Doping Concentrations
-
-Capacitance vs Reverse Bias for Different Detector Thicknesses
-
-Leakage Current vs Reverse Bias for Different Detector Thicknesses
-
-Capacitance vs Reverse Bias for Different Operating Temperatures
-
-Leakage Current vs Reverse Bias for Different Operating Temperatures
-
-The GUI reads the current values entered by the user and recalculates the simulation when UPDATE GRAPH is pressed. An optional Auto Update mode is also available.
-
-Project Structure
-
+```
 Radiation_Damage_Simulator/
 │
 ├── main.py
@@ -66,135 +59,145 @@ Radiation_Damage_Simulator/
 └── output/
     ├── graphs/
     └── data/
+```
 
-Requirements
+## Requirements
 
-Recommended Python version:
+**Recommended Python version:** Python 3.11 or newer
 
-Python 3.11 or newer
+**Python packages:**
+- numpy>=1.24
+- matplotlib>=3.7
+- pandas>=2.0
+- pytest>=7.4
 
-Python packages:
+*Tkinter is normally included with the standard Windows Python installation.*
 
-numpy>=1.24
-matplotlib>=3.7
-pandas>=2.0
-pytest>=7.4
+## Installation on Windows
 
-Tkinter is normally included with the standard Windows Python installation.
-
-Installation on Windows
-
-1. Open PowerShell
+### 1. Open PowerShell
 
 Go to the project directory.
 
 Example:
-
+```powershell
 cd "C:\Users\S\Downloads\Radiation_Damage_Simulator_complete\Radiation_Damage_Simulator_complete"
+```
 
 Replace the path with your actual project location.
 
-2. Create a virtual environment
+### 2. Create a virtual environment
 
+```powershell
 python -m venv .venv
+```
 
-If .venv already exists, skip this command.
+If `.venv` already exists, skip this command.
 
-3. Activate the virtual environment
+### 3. Activate the virtual environment
 
+```powershell
 .\.venv\Scripts\Activate.ps1
+```
 
 The terminal should then look similar to:
-
+```
 (.venv) PS C:\Users\S\Downloads\Radiation_Damage_Simulator_complete\Radiation_Damage_Simulator_complete>
+```
 
 If PowerShell blocks the script, run:
-
+```powershell
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+```
 
 Then activate again:
-
+```powershell
 .\.venv\Scripts\Activate.ps1
+```
 
-4. Install all dependencies
+### 4. Install all dependencies
 
 Use:
-
+```powershell
 python -m pip install -r requirements.txt
+```
 
 Or install them directly:
-
+```powershell
 python -m pip install numpy matplotlib pandas pytest
+```
 
-Do not upgrade the global Python installation just to run this project.
+**Do not upgrade the global Python installation just to run this project.**
 
-Verify the Installation
+## Verify the Installation
 
-Check which Python is being used:
-
+**Check which Python is being used:**
+```powershell
 python -c "import sys; print(sys.executable)"
+```
 
-The result should contain:
+The result should contain: `.venv\Scripts\python.exe`
 
-.venv\Scripts\python.exe
-
-Check the required packages:
-
+**Check the required packages:**
+```powershell
 python -c "import numpy, matplotlib, pandas; print('Dependencies installed successfully')"
+```
 
-Check versions:
-
+**Check versions:**
+```powershell
 python -c "import numpy, matplotlib, pandas; print('NumPy:', numpy.__version__); print('Matplotlib:', matplotlib.__version__); print('Pandas:', pandas.__version__)"
+```
 
-Run the GUI
+## Run the GUI
 
 The GUI is the main application.
 
 Run:
-
+```powershell
 python -m gui.app
+```
 
 or:
-
+```powershell
 python main.py
+```
 
 The GUI should open with the simulation controls and graph area.
 
-Using the GUI
+## Using the GUI
 
 The GUI contains input fields for:
 
-Thickness (µm)
-Area (cm²)
-Effective doping (cm⁻³)
-Built-in voltage (V)
+- **Detector Parameters:**
+  - Thickness (µm)
+  - Area (cm²)
+  - Effective doping (cm⁻³)
+  - Built-in voltage (V)
+  - Temperature (K)
 
-Temperature (K)
+- **Radiation Damage:**
+  - Initial fluence
+  - Final fluence
+  - Damage constant alpha
 
-Initial fluence
-Final fluence
-Damage constant alpha
-
-Minimum reverse voltage
-Maximum reverse voltage
-Voltage step
+- **Voltage Range:**
+  - Minimum reverse voltage
+  - Maximum reverse voltage
+  - Voltage step
 
 The GUI also provides comparison-value fields for:
+- Doping
+- Thickness
+- Temperature
 
-Doping
-Thickness
-Temperature
+### Update the Simulation
 
-Update the simulation
-
-Enter your values.
-
-Select the graph.
-
-Press UPDATE GRAPH.
+1. Enter your values
+2. Select the graph
+3. Press **UPDATE GRAPH**
 
 The calculation flow is:
-
+```
 Current GUI Input
        ↓
 Detector Parameters
@@ -208,17 +211,15 @@ Leakage Current
 Graph Redraw
        ↓
 Result Values Update
+```
 
-The GUI also has:
+The GUI also has an **Auto update while editing** option. When enabled, the graph is recalculated automatically after input changes.
 
-Auto update while editing
+## Recommended First Test
 
-When enabled, the graph is recalculated automatically after the input changes.
+Use these parameters:
 
-Recommended First Test
-
-Use:
-
+```
 Thickness       = 300
 Area            = 1.0
 Doping          = 1e15
@@ -233,123 +234,93 @@ Alpha           = 4e-17
 Minimum Voltage = 0
 Maximum Voltage = 500
 Voltage Step    = 5
+```
 
-Select:
+Select: **Capacitance vs Reverse Bias** and press **UPDATE GRAPH**
 
-Capacitance vs Reverse Bias
-
-and press:
-
-UPDATE GRAPH
-
-Then change:
-
-Doping = 1e14
-
-and press UPDATE GRAPH again.
+Then change: `Doping = 1e14` and press **UPDATE GRAPH** again.
 
 The graph should be recalculated using the new input.
 
-Comparison Studies
+## Comparison Studies
 
-Doping Study
+### Doping Study
 
-Example:
-
-1e14, 1e15, 1e16, 1e17, 1e18
+Example values: `1e14, 1e15, 1e16, 1e17, 1e18`
 
 Graphs:
+- Capacitance vs Doping
+- Leakage Current vs Doping
 
-Capacitance vs Doping
-Leakage Current vs Doping
+### Thickness Study
 
-Thickness Study
-
-Example:
-
-50, 100, 150, 200, 250, 300, 500
+Example values: `50, 100, 150, 200, 250, 300, 500`
 
 Graphs:
+- Capacitance vs Thickness
+- Leakage Current vs Thickness
 
-Capacitance vs Thickness
-Leakage Current vs Thickness
+### Temperature Study
 
-Temperature Study
-
-Example:
-
-253.15, 273.15, 288.15, 300.15, 313.15
+Example values: `253.15, 273.15, 288.15, 300.15, 313.15`
 
 Graphs:
+- Capacitance vs Temperature
+- Leakage Current vs Temperature
 
-Capacitance vs Temperature
-Leakage Current vs Temperature
+## Save Graphs
 
-Save Graphs
-
-Use:
-
-SAVE GRAPH
+Use: **SAVE GRAPH**
 
 Available formats:
+- PNG
+- PDF
+- SVG
 
-PNG
-PDF
-SVG
+Graphs are normally stored in: `output/graphs/`
 
-Graphs are normally stored in:
+## Export Simulation Data
 
-output/graphs/
-
-Export Simulation Data
-
-Use:
-
-EXPORT CSV
+Use: **EXPORT CSV**
 
 The exported data contains:
+- Reverse Bias (V)
+- Depletion Width (um)
+- Capacitance (pF)
+- Leakage Current (mA)
 
-Reverse Bias (V)
-Depletion Width (um)
-Capacitance (pF)
-Leakage Current (mA)
+Data is normally stored in: `output/data/`
 
-Data is normally stored in:
-
-output/data/
-
-Run Tests
+## Run Tests
 
 Run:
-
+```powershell
 pytest -q
+```
 
 The tests check detector and leakage-current behavior such as:
+- depletion width limits
+- positive capacitance
+- non-negative full-depletion voltage
+- fluence dependence
+- temperature dependence
 
-depletion width limits
-
-positive capacitance
-
-non-negative full-depletion voltage
-
-fluence dependence
-
-temperature dependence
-
-Command-Line Mode
+## Command-Line Mode
 
 To run the simulator without the GUI:
 
+```powershell
 python main.py --cli
+```
 
 This prints the simulation parameters and final calculated values in the terminal.
 
-Configuration
+## Configuration
 
-config.py contains the default values used when the program starts and when RESET DEFAULTS is selected.
+`config.py` contains the default values used when the program starts and when **RESET DEFAULTS** is selected.
 
 Example:
-
+```python
 THICKNESS_UM = 300.0
 AREA_CM2 = 1.0
 
@@ -366,133 +337,123 @@ ALPHA = 4e-17
 REVERSE_VOLTAGE_MIN = 0.0
 REVERSE_VOLTAGE_MAX = 500.0
 REVERSE_VOLTAGE_STEP = 5.0
+```
 
-Important:
+**Important:** `config.py` provides defaults only. When the user changes a value in the GUI, the current GUI value is passed to the simulation. The program does not need to modify `config.py`.
 
-config.py provides defaults only.
+## Physics Model
 
-When the user changes a value in the GUI, the current GUI value is passed to the simulation. The program does not need to modify config.py.
-
-Physics Model
-
-The detector depletion width is calculated using:
-
+**Detector depletion width:**
+```
 W = sqrt[
     2 * epsilon * (V_R + V_BI)
-    -----------------------------
-          q * N_eff
+    ─────────────────────────
+           q * N_eff
 ]
+```
 
 The depletion width is limited by the physical detector thickness.
 
-Capacitance:
-
+**Capacitance:**
+```
 C = epsilon * A / W
+```
 
-Radiation-induced leakage current:
-
+**Radiation-induced leakage current:**
+```
 I = alpha * fluence * depleted_volume
 
-where:
-
-depleted_volume = area * depletion_width
+where: depleted_volume = area * depletion_width
+```
 
 The leakage-current model also supports the temperature dependence used by the temperature study.
 
-Troubleshooting
+## Troubleshooting
 
-NumPy is not found
+### NumPy is not found
 
 Activate the virtual environment:
-
+```powershell
 .\.venv\Scripts\Activate.ps1
+```
 
 Then:
-
+```powershell
 python -m pip install numpy
+```
 
-Matplotlib is not found
+### Matplotlib is not found
 
+```powershell
 python -m pip install matplotlib
+```
 
-Pandas is not found
+### Pandas is not found
 
+```powershell
 python -m pip install pandas
+```
 
-Pytest is not found
+### Pytest is not found
 
+```powershell
 python -m pip install pytest
+```
 
-VS Code says "Import could not be resolved"
+### VS Code says "Import could not be resolved"
 
-Open:
+1. Open: `Ctrl + Shift + P`
+2. Select: **Python: Select Interpreter**
+3. Choose: `.venv\Scripts\python.exe`
+4. Do not select the global: `C:\Python311\python.exe`
 
-Ctrl + Shift + P
-
-Select:
-
-Python: Select Interpreter
-
-Choose:
-
-.venv\Scripts\python.exe
-
-Do not select the global:
-
-C:\Python311\python.exe
-
-Quick Start
+## Quick Start
 
 From the project root:
 
+```powershell
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install -r requirements.txt
 python -m gui.app
+```
 
 Run tests:
-
+```powershell
 pytest -q
+```
 
 Run command-line mode:
-
+```powershell
 python main.py --cli
+```
 
-Git
+## Git
 
-Do not commit:
+**Do not commit:**
+- `.venv/`
+- `__pycache__/`
+- `.pytest_cache/`
 
-.venv/
-__pycache__/
-.pytest_cache/
+These should be excluded by `.gitignore`.
 
-These should be excluded by .gitignore.
-
-Typical Git commands:
-
+**Typical Git commands:**
+```powershell
 git status
 git add .
 git commit -m "Update radiation damage simulator"
 git push
+```
 
-Future Improvements
+## Future Improvements
 
 Possible future additions:
-
-multiple detector-material models
-
-radiation type selection
-
-bias-voltage slider
-
-additional radiation-damage models
-
-improved temperature-dependent semiconductor physics
-
-batch simulation
-
-automatic report generation
-
-GUI dashboard
-
-interactive parameter studies
+- Multiple detector-material models
+- Radiation type selection
+- Bias-voltage slider
+- Additional radiation-damage models
+- Improved temperature-dependent semiconductor physics
+- Batch simulation
+- Automatic report generation
+- GUI dashboard
+- Interactive parameter studies
