@@ -7,12 +7,14 @@
 #   1. Capacitance vs Reverse Bias
 #   2. Leakage Current vs Reverse Bias
 #   3. Capacitance and Leakage Current vs Reverse Bias
-#   4. Capacitance vs Doping
-#   5. Leakage Current vs Doping
-#   6. Capacitance vs Thickness
-#   7. Leakage Current vs Thickness
-#   8. Capacitance vs Temperature
-#   9. Leakage Current vs Temperature
+#   4. Capacitance vs Reverse Bias - Different Doping
+#   5. Leakage Current vs Reverse Bias - Different Doping
+#   6. Capacitance vs Reverse Bias - Additional/High-Resolution Doping
+#   7. Leakage Current vs Reverse Bias - Additional/High-Resolution Doping
+#   8. Capacitance vs Reverse Bias - Different Thickness
+#   9. Leakage Current vs Reverse Bias - Different Thickness
+#  10. Capacitance vs Reverse Bias - Different Temperature
+#  11. Leakage Current vs Reverse Bias - Different Temperature
 #
 # IMPORTANT:
 #
@@ -86,23 +88,38 @@ class RadiationDamageGUI:
 
     GRAPH_OPTIONS = [
 
+        # Graph 1
         "Capacitance vs Reverse Bias",
 
+        # Graph 2
         "Leakage Current vs Reverse Bias",
 
-        "Capacitance and Leakage Current",
+        # Graph 3
+        "Combined Capacitance & Leakage Current vs Reverse Bias",
 
-        "Capacitance vs Doping",
+        # Graph 4
+        "Capacitance vs Reverse Bias - Different Doping",
 
-        "Leakage Current vs Doping",
+        # Graph 5
+        "Leakage Current vs Reverse Bias - Different Doping",
 
-        "Capacitance vs Thickness",
+        # Graph 6
+        "Capacitance vs Reverse Bias - Additional/High-Resolution Doping",
 
-        "Leakage Current vs Thickness",
+        # Graph 7
+        "Leakage Current vs Reverse Bias - Additional/High-Resolution Doping",
 
-        "Capacitance vs Temperature",
+        # Graph 8
+        "Capacitance vs Reverse Bias - Different Thickness",
 
-        "Leakage Current vs Temperature"
+        # Graph 9
+        "Leakage Current vs Reverse Bias - Different Thickness",
+
+        # Graph 10
+        "Capacitance vs Reverse Bias - Different Temperature",
+
+        # Graph 11
+        "Leakage Current vs Reverse Bias - Different Temperature"
     ]
 
 
@@ -1693,7 +1710,7 @@ class RadiationDamageGUI:
                 )
 
             elif graph_name == (
-                "Capacitance and Leakage Current"
+                "Combined Capacitance & Leakage Current vs Reverse Bias"
             ):
 
                 self.draw_combined(
@@ -1701,7 +1718,7 @@ class RadiationDamageGUI:
                 )
 
             elif graph_name == (
-                "Capacitance vs Doping"
+                "Capacitance vs Reverse Bias - Different Doping"
             ):
 
                 values = self.parse_values(
@@ -1715,7 +1732,7 @@ class RadiationDamageGUI:
                 )
 
             elif graph_name == (
-                "Leakage Current vs Doping"
+                "Leakage Current vs Reverse Bias - Different Doping"
             ):
 
                 values = self.parse_values(
@@ -1730,7 +1747,37 @@ class RadiationDamageGUI:
                 )
 
             elif graph_name == (
-                "Capacitance vs Thickness"
+                "Capacitance vs Reverse Bias - Additional/High-Resolution Doping"
+            ):
+
+                values = self.parse_values(
+                    self.doping_study_var.get(),
+                    "Doping"
+                )
+
+                self.draw_high_resolution_doping_capacitance(
+                    result,
+                    values,
+                    params
+                )
+
+            elif graph_name == (
+                "Leakage Current vs Reverse Bias - Additional/High-Resolution Doping"
+            ):
+
+                values = self.parse_values(
+                    self.doping_study_var.get(),
+                    "Doping"
+                )
+
+                self.draw_high_resolution_doping_leakage(
+                    result,
+                    values,
+                    params
+                )
+
+            elif graph_name == (
+                "Capacitance vs Reverse Bias - Different Thickness"
             ):
 
                 values = self.parse_values(
@@ -1745,7 +1792,7 @@ class RadiationDamageGUI:
                 )
 
             elif graph_name == (
-                "Leakage Current vs Thickness"
+                "Leakage Current vs Reverse Bias - Different Thickness"
             ):
 
                 values = self.parse_values(
@@ -1760,7 +1807,7 @@ class RadiationDamageGUI:
                 )
 
             elif graph_name == (
-                "Capacitance vs Temperature"
+                "Capacitance vs Reverse Bias - Different Temperature"
             ):
 
                 values = self.parse_values(
@@ -1774,7 +1821,7 @@ class RadiationDamageGUI:
                 )
 
             elif graph_name == (
-                "Leakage Current vs Temperature"
+                "Leakage Current vs Reverse Bias - Different Temperature"
             ):
 
                 values = self.parse_values(
@@ -1933,84 +1980,49 @@ class RadiationDamageGUI:
     # GRAPH 3
     # ========================================================
 
-    def draw_combined(
-        self,
-        result
-    ):
+    def draw_combined(self, result):
 
-        ax1 = self.figure.add_subplot(
-            111
-        )
+        self.figure.clear()
 
+        ax1 = self.figure.add_subplot(111)
         ax2 = ax1.twinx()
 
         line1 = ax1.plot(
-
             result["voltage"],
-
             result["capacitance"] * 1e12,
-
             color="blue",
-
             linewidth=2.5,
-
             label="Capacitance"
         )
 
         line2 = ax2.plot(
-
             result["voltage"],
-
             result["leakage"] * 1e3,
-
             color="red",
-
             linewidth=2.5,
-
             label="Leakage Current"
         )
 
-        ax1.set_xlabel(
-            "Reverse Bias Voltage (V)",
-            fontsize=12
-        )
+        ax1.set_xlabel("Reverse Bias Voltage (V)")
+        ax1.set_ylabel("Capacitance (pF)", color="blue")
+        ax2.set_ylabel("Leakage Current (mA)", color="red")
 
-        ax1.set_ylabel(
-            "Capacitance (pF)",
-            fontsize=12
-        )
+        ax1.tick_params(axis="y", labelcolor="blue")
+        ax2.tick_params(axis="y", labelcolor="red")
 
-        ax2.set_ylabel(
-            "Leakage Current (mA)",
-            fontsize=12
-        )
+        ax1.set_ylim(0, max(result["capacitance"] * 1e12) * 1.08)
+        ax2.set_ylim(0, max(result["leakage"] * 1e3) * 1.08)
 
         ax1.set_title(
-            "Capacitance and Leakage Current\n"
-            "vs Reverse Bias Voltage",
-            fontsize=14
+            "Capacitance and Leakage Current vs Reverse Bias Voltage"
         )
 
-        ax1.grid(
-            True,
-            linestyle="--",
-            alpha=0.3
-        )
+        ax1.grid(True, linestyle="--", alpha=0.3)
 
         lines = line1 + line2
+        ax1.legend(lines, [l.get_label() for l in lines], loc="best")
 
-        ax1.legend(
-
-            lines,
-
-            [
-                line.get_label()
-                for line in lines
-            ],
-
-            loc="best"
-        )
-
+        self.figure.tight_layout()
 
     # ========================================================
     # GRAPH 4
@@ -2149,49 +2161,64 @@ class RadiationDamageGUI:
         params
     ):
 
-        ax = self.figure.add_subplot(
-            111
-        )
+        ax = self.figure.add_subplot(111)
 
-        for thickness in values:
+        # Case 3: use higher doping ONLY for thickness study
+        Nd_case3 = 1e13
 
-            detector = self.create_detector(
+        # Elementary charge (C)
+        q = 1.602176634e-19
 
-                params,
+        # Silicon permittivity from the detector model
+        eps_si = result["detector"].epsilon
 
-                thickness=thickness
+        for thickness_um in values:
+
+            # Convert micrometres to centimetres
+            thickness = thickness_um * 1e-4
+
+            # Depletion width for this thickness-study doping
+            width = np.sqrt(
+                (
+                    2.0
+                    * eps_si
+                    * (params["vbi"] + result["voltage"])
+                )
+                /
+                (
+                    q * Nd_case3
+                )
             )
 
-            width = detector.depletion_width(
-                result["voltage"]
+            # Limit depletion width to physical detector thickness
+            width = np.minimum(
+                width,
+                thickness
             )
 
-            capacitance = detector.capacitance(
-                width
+            # Capacitance
+            capacitance = (
+                eps_si
+                * params["area"]
+                / width
             )
 
             ax.plot(
-
                 result["voltage"],
-
-                capacitance * 1e12,
-
+                np.asarray(capacitance) * 1e12,
                 linewidth=2,
-
-                label=f"{thickness:g} µm"
+                label=f"{thickness_um:g} µm"
             )
 
         self.style_axis(
-
             ax,
-
             "Capacitance vs Reverse Bias\n"
             "for Different Detector Thicknesses",
-
             "Capacitance (pF)"
         )
 
         ax.legend(
+            title="Thickness",
             fontsize=8
         )
 
@@ -2207,64 +2234,192 @@ class RadiationDamageGUI:
         params
     ):
 
-        ax = self.figure.add_subplot(
-            111
-        )
+        ax = self.figure.add_subplot(111)
 
-        for thickness in values:
+        # Case 3: use higher doping ONLY for thickness study
+        Nd_case3 = 1e13
 
-            detector = self.create_detector(
+        # Elementary charge (C)
+        q = 1.602176634e-19
 
-                params,
+        # Silicon permittivity from the detector model
+        eps_si = result["detector"].epsilon
 
-                thickness=thickness
+        for thickness_um in values:
+
+            # Convert micrometres to centimetres
+            thickness = thickness_um * 1e-4
+
+            # Depletion width for this thickness-study doping
+            width = np.sqrt(
+                (
+                    2.0
+                    * eps_si
+                    * (params["vbi"] + result["voltage"])
+                )
+                /
+                (
+                    q * Nd_case3
+                )
             )
 
-            width = detector.depletion_width(
-                result["voltage"]
-            )
-
-            leakage = self.calculate_leakage(
-
-                leakage_model=
-                result["leakage_model"],
-
-                fluence=
-                params["final_fluence"],
-
-                area=
-                params["area"],
-
-                width=
+            # Limit depletion width to physical detector thickness
+            width = np.minimum(
                 width,
+                thickness
+            )
 
-                temperature=
-                params["temperature"]
+            # Leakage current using the same leakage model
+            # and temperature handling as the main simulation
+            leakage = self.calculate_leakage(
+                leakage_model=result["leakage_model"],
+                fluence=params["final_fluence"],
+                area=params["area"],
+                width=width,
+                temperature=params["temperature"]
             )
 
             ax.plot(
-
                 result["voltage"],
-
-                leakage * 1e3,
-
+                np.asarray(leakage) * 1e3,
                 linewidth=2,
-
-                label=f"{thickness:g} µm"
+                label=f"{thickness_um:g} µm"
             )
 
         self.style_axis(
-
             ax,
-
             "Leakage Current vs Reverse Bias\n"
             "for Different Detector Thicknesses",
-
             "Leakage Current (mA)"
         )
 
         ax.legend(
+            title="Thickness",
             fontsize=8
+        )
+
+
+    # ========================================================
+    # GRAPH 6 - ADDITIONAL / HIGH-RESOLUTION DOPING
+    # ========================================================
+
+    def _high_resolution_doping_values(self, values):
+
+        # Build a denser logarithmic doping grid from the user-selected
+        # doping range. This keeps Graph 6 independent from Graph 4 while
+        # preserving the same physical parameter range.
+        low = min(values)
+        high = max(values)
+
+        if low == high:
+            return np.array([low], dtype=float)
+
+        return np.geomspace(low, high, 15)
+
+
+    def _high_resolution_voltage(self, params):
+
+        # Use a finer voltage grid for the additional/high-resolution study.
+        points = max(501, int(round((params["vmax"] - params["vmin"]) / params["vstep"])) * 5 + 1)
+
+        return np.linspace(
+            params["vmin"],
+            params["vmax"],
+            points
+        )
+
+
+    def draw_high_resolution_doping_capacitance(
+        self,
+        result,
+        values,
+        params
+    ):
+
+        ax = self.figure.add_subplot(111)
+
+        voltage = self._high_resolution_voltage(params)
+        doping_values = self._high_resolution_doping_values(values)
+
+        for doping in doping_values:
+
+            width = result["detector"].depletion_width_for_doping(
+                voltage,
+                doping
+            )
+
+            capacitance = result["detector"].capacitance(width)
+
+            ax.plot(
+                voltage,
+                capacitance * 1e12,
+                linewidth=1.5,
+                label=f"{doping:.2e} cm⁻³"
+            )
+
+        self.style_axis(
+            ax,
+            "Capacitance vs Reverse Bias\n"
+            "Additional / High-Resolution Doping Study",
+            "Capacitance (pF)"
+        )
+
+        ax.legend(
+            fontsize=7,
+            ncol=2
+        )
+
+
+    # ========================================================
+    # GRAPH 7 - ADDITIONAL / HIGH-RESOLUTION DOPING
+    # ========================================================
+
+    def draw_high_resolution_doping_leakage(
+        self,
+        result,
+        values,
+        params
+    ):
+
+        ax = self.figure.add_subplot(111)
+
+        voltage = self._high_resolution_voltage(params)
+        doping_values = self._high_resolution_doping_values(values)
+
+        leakage_model = result["leakage_model"]
+
+        for doping in doping_values:
+
+            width = result["detector"].depletion_width_for_doping(
+                voltage,
+                doping
+            )
+
+            leakage = self.calculate_leakage(
+                leakage_model=leakage_model,
+                fluence=params["final_fluence"],
+                area=params["area"],
+                width=width,
+                temperature=params["temperature"]
+            )
+
+            ax.plot(
+                voltage,
+                leakage * 1e3,
+                linewidth=1.5,
+                label=f"{doping:.2e} cm⁻³"
+            )
+
+        self.style_axis(
+            ax,
+            "Leakage Current vs Reverse Bias\n"
+            "Additional / High-Resolution Doping Study",
+            "Leakage Current (mA)"
+        )
+
+        ax.legend(
+            fontsize=7,
+            ncol=2
         )
 
 
