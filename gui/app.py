@@ -335,12 +335,16 @@ class RadiationDamageGUI:
             )
         )
 
-        self.temperature_study_var = tk.StringVar(
-            value=", ".join(
-                str(value)
-                for value in
-                config.TEMPERATURE_STUDY_VALUES_K
-            )
+        self.temperature_initial_var = tk.StringVar(
+            value="253.15"
+        )
+
+        self.temperature_final_var = tk.StringVar(
+            value="313.15"
+        )
+
+        self.temperature_steps_var = tk.StringVar(
+            value="5"
         )
 
         # ----------------------------------------------------
@@ -845,14 +849,60 @@ class RadiationDamageGUI:
 
         ttk.Label(
             study_box,
-            text="Temperature values (K):"
+            text="Initial Temperature (K):"
         ).pack(
             anchor="w"
         )
 
-        ttk.Entry(
+        ttk.Combobox(
             study_box,
-            textvariable=self.temperature_study_var
+            textvariable=self.temperature_initial_var,
+            values=[
+                "233.15", "243.15", "253.15", "263.15",
+                "273.15", "283.15", "293.15", "303.15",
+                "313.15", "323.15", "333.15", "343.15",
+                "353.15", "363.15", "373.15"
+            ],
+            state="readonly"
+        ).pack(
+            fill="x",
+            pady=(2, 6)
+        )
+
+        ttk.Label(
+            study_box,
+            text="Final Temperature (K):"
+        ).pack(
+            anchor="w"
+        )
+
+        ttk.Combobox(
+            study_box,
+            textvariable=self.temperature_final_var,
+            values=[
+                "233.15", "243.15", "253.15", "263.15",
+                "273.15", "283.15", "293.15", "303.15",
+                "313.15", "323.15", "333.15", "343.15",
+                "353.15", "363.15", "373.15"
+            ],
+            state="readonly"
+        ).pack(
+            fill="x",
+            pady=(2, 6)
+        )
+
+        ttk.Label(
+            study_box,
+            text="Temperature Steps:"
+        ).pack(
+            anchor="w"
+        )
+
+        ttk.Combobox(
+            study_box,
+            textvariable=self.temperature_steps_var,
+            values=["2", "3", "4", "5", "6", "7", "8", "9", "10"],
+            state="readonly"
         ).pack(
             fill="x"
         )
@@ -1175,7 +1225,11 @@ class RadiationDamageGUI:
 
             self.thickness_study_var,
 
-            self.temperature_study_var
+            self.temperature_initial_var,
+
+            self.temperature_final_var,
+
+            self.temperature_steps_var
         ]
 
         for variable in variables:
@@ -1376,6 +1430,52 @@ class RadiationDamageGUI:
             )
 
         return values
+
+
+    # ========================================================
+    # TEMPERATURE STUDY VALUES
+    # ========================================================
+
+    def get_temperature_study_values(
+        self
+    ):
+        try:
+            initial = float(
+                self.temperature_initial_var.get()
+            )
+            final = float(
+                self.temperature_final_var.get()
+            )
+            steps = int(
+                self.temperature_steps_var.get()
+            )
+        except ValueError as error:
+            raise ValueError(
+                "Initial temperature, final temperature and steps "
+                "must be valid values."
+            ) from error
+
+        if initial <= 0 or final <= 0:
+            raise ValueError(
+                "Temperatures must be greater than zero."
+            )
+
+        if final < initial:
+            raise ValueError(
+                "Final temperature must be greater than or equal to "
+                "initial temperature."
+            )
+
+        if steps < 2:
+            raise ValueError(
+                "Temperature steps must be at least 2."
+            )
+
+        return np.linspace(
+            initial,
+            final,
+            steps
+        )
 
 
     # ========================================================
@@ -1810,10 +1910,7 @@ class RadiationDamageGUI:
                 "Capacitance vs Reverse Bias - Different Temperature"
             ):
 
-                values = self.parse_values(
-                    self.temperature_study_var.get(),
-                    "Temperature"
-                )
+                values = self.get_temperature_study_values()
 
                 self.draw_temperature_capacitance(
                     result,
@@ -1824,10 +1921,7 @@ class RadiationDamageGUI:
                 "Leakage Current vs Reverse Bias - Different Temperature"
             ):
 
-                values = self.parse_values(
-                    self.temperature_study_var.get(),
-                    "Temperature"
-                )
+                values = self.get_temperature_study_values()
 
                 self.draw_temperature_leakage(
                     result,
@@ -2161,64 +2255,49 @@ class RadiationDamageGUI:
         params
     ):
 
-        ax = self.figure.add_subplot(111)
+        ax = self.figure.add_subplot(
+            111
+        )
 
-        # Case 3: use higher doping ONLY for thickness study
-        Nd_case3 = 1e13
+        for thickness in values:
 
-        # Elementary charge (C)
-        q = 1.602176634e-19
+            detector = self.create_detector(
 
-        # Silicon permittivity from the detector model
-        eps_si = result["detector"].epsilon
+                params,
 
-        for thickness_um in values:
-
-            # Convert micrometres to centimetres
-            thickness = thickness_um * 1e-4
-
-            # Depletion width for this thickness-study doping
-            width = np.sqrt(
-                (
-                    2.0
-                    * eps_si
-                    * (params["vbi"] + result["voltage"])
-                )
-                /
-                (
-                    q * Nd_case3
-                )
+                thickness=thickness
             )
 
-            # Limit depletion width to physical detector thickness
-            width = np.minimum(
-                width,
-                thickness
+            width = detector.depletion_width(
+                result["voltage"]
             )
 
-            # Capacitance
-            capacitance = (
-                eps_si
-                * params["area"]
-                / width
+            capacitance = detector.capacitance(
+                width
             )
 
             ax.plot(
+
                 result["voltage"],
-                np.asarray(capacitance) * 1e12,
+
+                capacitance * 1e12,
+
                 linewidth=2,
-                label=f"{thickness_um:g} µm"
+
+                label=f"{thickness:g} µm"
             )
 
         self.style_axis(
+
             ax,
+
             "Capacitance vs Reverse Bias\n"
             "for Different Detector Thicknesses",
+
             "Capacitance (pF)"
         )
 
         ax.legend(
-            title="Thickness",
             fontsize=8
         )
 
@@ -2234,67 +2313,63 @@ class RadiationDamageGUI:
         params
     ):
 
-        ax = self.figure.add_subplot(111)
+        ax = self.figure.add_subplot(
+            111
+        )
 
-        # Case 3: use higher doping ONLY for thickness study
-        Nd_case3 = 1e13
+        for thickness in values:
 
-        # Elementary charge (C)
-        q = 1.602176634e-19
+            detector = self.create_detector(
 
-        # Silicon permittivity from the detector model
-        eps_si = result["detector"].epsilon
+                params,
 
-        for thickness_um in values:
-
-            # Convert micrometres to centimetres
-            thickness = thickness_um * 1e-4
-
-            # Depletion width for this thickness-study doping
-            width = np.sqrt(
-                (
-                    2.0
-                    * eps_si
-                    * (params["vbi"] + result["voltage"])
-                )
-                /
-                (
-                    q * Nd_case3
-                )
+                thickness=thickness
             )
 
-            # Limit depletion width to physical detector thickness
-            width = np.minimum(
-                width,
-                thickness
+            width = detector.depletion_width(
+                result["voltage"]
             )
 
-            # Leakage current using the same leakage model
-            # and temperature handling as the main simulation
             leakage = self.calculate_leakage(
-                leakage_model=result["leakage_model"],
-                fluence=params["final_fluence"],
-                area=params["area"],
-                width=width,
-                temperature=params["temperature"]
+
+                leakage_model=
+                result["leakage_model"],
+
+                fluence=
+                params["final_fluence"],
+
+                area=
+                params["area"],
+
+                width=
+                width,
+
+                temperature=
+                params["temperature"]
             )
 
             ax.plot(
+
                 result["voltage"],
-                np.asarray(leakage) * 1e3,
+
+                leakage * 1e3,
+
                 linewidth=2,
-                label=f"{thickness_um:g} µm"
+
+                label=f"{thickness:g} µm"
             )
 
         self.style_axis(
+
             ax,
+
             "Leakage Current vs Reverse Bias\n"
             "for Different Detector Thicknesses",
+
             "Leakage Current (mA)"
         )
 
         ax.legend(
-            title="Thickness",
             fontsize=8
         )
 
@@ -2638,12 +2713,18 @@ class RadiationDamageGUI:
             )
         )
 
-        self.temperature_study_var.set(
-            ", ".join(
-                str(value)
-                for value in
-                config.TEMPERATURE_STUDY_VALUES_K
-            )
+        temperature_values = config.TEMPERATURE_STUDY_VALUES_K
+
+        self.temperature_initial_var.set(
+            str(temperature_values[0])
+        )
+
+        self.temperature_final_var.set(
+            str(temperature_values[-1])
+        )
+
+        self.temperature_steps_var.set(
+            str(len(temperature_values))
         )
 
         self.graph_var.set(
