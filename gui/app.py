@@ -86,41 +86,38 @@ class RadiationDamageGUI:
     # GRAPH OPTIONS
     # ========================================================
 
-    GRAPH_OPTIONS = [
-
-        # Graph 1
+    # The first three graphs are always available.
+    BASE_GRAPH_OPTIONS = [
         "Capacitance vs Reverse Bias",
-
-        # Graph 2
         "Leakage Current vs Reverse Bias",
+        "Combined Capacitance & Leakage Current vs Reverse Bias"
+    ]
 
-        # Graph 3
-        "Combined Capacitance & Leakage Current vs Reverse Bias",
-
-        # Graph 4
+    DOPING_GRAPH_OPTIONS = [
         "Capacitance vs Reverse Bias - Different Doping",
-
-        # Graph 5
         "Leakage Current vs Reverse Bias - Different Doping",
-
-        # Graph 6
         "Capacitance vs Reverse Bias - Additional/High-Resolution Doping",
+        "Leakage Current vs Reverse Bias - Additional/High-Resolution Doping"
+    ]
 
-        # Graph 7
-        "Leakage Current vs Reverse Bias - Additional/High-Resolution Doping",
-
-        # Graph 8
+    THICKNESS_GRAPH_OPTIONS = [
         "Capacitance vs Reverse Bias - Different Thickness",
+        "Leakage Current vs Reverse Bias - Different Thickness"
+    ]
 
-        # Graph 9
-        "Leakage Current vs Reverse Bias - Different Thickness",
-
-        # Graph 10
+    TEMPERATURE_GRAPH_OPTIONS = [
         "Capacitance vs Reverse Bias - Different Temperature",
-
-        # Graph 11
         "Leakage Current vs Reverse Bias - Different Temperature"
     ]
+
+    # Kept as the complete list for reference.  The actual graph
+    # dropdown is generated dynamically from the selected studies.
+    GRAPH_OPTIONS = (
+        BASE_GRAPH_OPTIONS
+        + DOPING_GRAPH_OPTIONS
+        + THICKNESS_GRAPH_OPTIONS
+        + TEMPERATURE_GRAPH_OPTIONS
+    )
 
 
     # ========================================================
@@ -318,33 +315,52 @@ class RadiationDamageGUI:
         # ----------------------------------------------------
         # Comparison values
         # ----------------------------------------------------
-
-        self.doping_study_var = tk.StringVar(
-            value=", ".join(
-                f"{value:.6g}"
-                for value in
-                config.DOPING_STUDY_VALUES
-            )
+        # One master checkbox controls the complete comparison
+        # section.  When enabled, all comparison value controls
+        # become available together.
+        self.compare_values_var = tk.BooleanVar(
+            value=False
         )
 
-        self.thickness_study_var = tk.StringVar(
-            value=", ".join(
-                str(value)
-                for value in
-                config.THICKNESS_STUDY_VALUES_UM
-            )
+        # Doping concentration sweep
+        self.doping_initial_var = tk.StringVar(
+            value=f"{min(config.DOPING_STUDY_VALUES):.6g}"
         )
+
+        self.doping_final_var = tk.StringVar(
+            value=f"{max(config.DOPING_STUDY_VALUES):.6g}"
+        )
+
+        self.doping_steps_var = tk.StringVar(
+            value=str(len(config.DOPING_STUDY_VALUES))
+        )
+
+        # Detector thickness sweep
+        self.thickness_initial_var = tk.StringVar(
+            value=str(min(config.THICKNESS_STUDY_VALUES_UM))
+        )
+
+        self.thickness_final_var = tk.StringVar(
+            value=str(max(config.THICKNESS_STUDY_VALUES_UM))
+        )
+
+        self.thickness_steps_var = tk.StringVar(
+            value=str(len(config.THICKNESS_STUDY_VALUES_UM))
+        )
+
+        # Temperature sweep
+        temperature_values = config.TEMPERATURE_STUDY_VALUES_K
 
         self.temperature_initial_var = tk.StringVar(
-            value="253.15"
+            value=str(temperature_values[0])
         )
 
         self.temperature_final_var = tk.StringVar(
-            value="313.15"
+            value=str(temperature_values[-1])
         )
 
         self.temperature_steps_var = tk.StringVar(
-            value="5"
+            value=str(len(temperature_values))
         )
 
         # ----------------------------------------------------
@@ -352,8 +368,23 @@ class RadiationDamageGUI:
         # ----------------------------------------------------
 
         self.graph_var = tk.StringVar(
-            value=self.GRAPH_OPTIONS[0]
+            value=self.BASE_GRAPH_OPTIONS[0]
         )
+
+        # Four independent graph selections.
+        # Window 1 defaults to the first graph; the other windows start empty.
+        self.graph_vars = [
+            self.graph_var,
+            tk.StringVar(value="Empty"),
+            tk.StringVar(value="Empty"),
+            tk.StringVar(value="Empty")
+        ]
+
+        self.graph_combos = []
+        self.graph_figures = []
+        self.graph_canvases = []
+        self.graph_toolbars = []
+        self.expanded_windows = {}
 
         # ----------------------------------------------------
         # Automatic update
@@ -532,6 +563,10 @@ class RadiationDamageGUI:
         self.build_graph_panel(
             right
         )
+
+        # Initialize the unified comparison section after graph_combo exists.
+        self.refresh_comparison_controls()
+
 
 
     # ========================================================
@@ -806,141 +841,352 @@ class RadiationDamageGUI:
         # COMPARISON VALUES
         # ====================================================
 
-        study_box = ttk.LabelFrame(
+        # Master checkbox.  This is the only comparison tick mark.
+        ttk.Checkbutton(
+            content,
+            text="Compare Values",
+            variable=self.compare_values_var,
+            command=self.refresh_comparison_controls
+        ).pack(
+            anchor="w",
+            pady=(5, 2)
+        )
+
+        # One unified comparison section.  It is shown only when
+        # "Compare Values" is checked.
+        self.study_box = ttk.LabelFrame(
             content,
             text="Comparison Values",
             padding=8
         )
 
-        study_box.pack(
+        # ----------------------------------------------------
+        # DOPING
+        # ----------------------------------------------------
+
+        doping_row = ttk.Frame(
+            self.study_box
+        )
+        doping_row.pack(
             fill="x",
-            pady=5
+            pady=3
         )
 
         ttk.Label(
-            study_box,
-            text="Doping values:"
-        ).pack(
-            anchor="w"
-        )
-
-        ttk.Entry(
-            study_box,
-            textvariable=self.doping_study_var
-        ).pack(
-            fill="x",
-            pady=(2, 6)
+            doping_row,
+            text="Doping Concentration (cm⁻³)"
+        ).grid(
+            row=0,
+            column=0,
+            columnspan=6,
+            sticky="w",
+            pady=(0, 3)
         )
 
         ttk.Label(
-            study_box,
-            text="Thickness values (µm):"
-        ).pack(
-            anchor="w"
+            doping_row,
+            text="Initial:"
+        ).grid(
+            row=1,
+            column=0,
+            sticky="w",
+            padx=(0, 3)
         )
 
-        ttk.Entry(
-            study_box,
-            textvariable=self.thickness_study_var
-        ).pack(
-            fill="x",
-            pady=(2, 6)
+        self.doping_initial_combo = ttk.Combobox(
+            doping_row,
+            textvariable=self.doping_initial_var,
+            values=[
+                f"{10 ** exponent:.0e}"
+                for exponent in range(11, 16)
+            ],
+            state="readonly",
+            width=12
+        )
+        self.doping_initial_combo.grid(
+            row=1,
+            column=1,
+            sticky="ew",
+            padx=(0, 8)
         )
 
         ttk.Label(
-            study_box,
-            text="Initial Temperature (K):"
-        ).pack(
-            anchor="w"
+            doping_row,
+            text="Final:"
+        ).grid(
+            row=1,
+            column=2,
+            sticky="w",
+            padx=(0, 3)
         )
 
-        ttk.Combobox(
-            study_box,
+        self.doping_final_combo = ttk.Combobox(
+            doping_row,
+            textvariable=self.doping_final_var,
+            values=[
+                f"{10 ** exponent:.0e}"
+                for exponent in range(11, 16)
+            ],
+            state="readonly",
+            width=12
+        )
+        self.doping_final_combo.grid(
+            row=1,
+            column=3,
+            sticky="ew",
+            padx=(0, 8)
+        )
+
+        ttk.Label(
+            doping_row,
+            text="Steps:"
+        ).grid(
+            row=1,
+            column=4,
+            sticky="w",
+            padx=(0, 3)
+        )
+
+        self.doping_steps_combo = ttk.Combobox(
+            doping_row,
+            textvariable=self.doping_steps_var,
+            values=[
+                "2", "3", "4", "5", "6", "7", "8", "9", "10",
+                "12", "15", "20"
+            ],
+            state="readonly",
+            width=7
+        )
+        self.doping_steps_combo.grid(
+            row=1,
+            column=5,
+            sticky="ew"
+        )
+
+        for column in (1, 3, 5):
+            doping_row.columnconfigure(column, weight=1)
+
+        # ----------------------------------------------------
+        # THICKNESS
+        # ----------------------------------------------------
+
+        thickness_row = ttk.Frame(
+            self.study_box
+        )
+        thickness_row.pack(
+            fill="x",
+            pady=3
+        )
+
+        ttk.Label(
+            thickness_row,
+            text="Detector Thickness (µm)"
+        ).grid(
+            row=0,
+            column=0,
+            columnspan=6,
+            sticky="w",
+            pady=(0, 3)
+        )
+
+        ttk.Label(
+            thickness_row,
+            text="Initial:"
+        ).grid(
+            row=1,
+            column=0,
+            sticky="w",
+            padx=(0, 3)
+        )
+
+        self.thickness_initial_combo = ttk.Combobox(
+            thickness_row,
+            textvariable=self.thickness_initial_var,
+            values=[
+                "25", "50", "75", "100", "150", "200",
+                "250", "300", "400", "500", "750", "1000"
+            ],
+            state="readonly",
+            width=12
+        )
+        self.thickness_initial_combo.grid(
+            row=1,
+            column=1,
+            sticky="ew",
+            padx=(0, 8)
+        )
+
+        ttk.Label(
+            thickness_row,
+            text="Final:"
+        ).grid(
+            row=1,
+            column=2,
+            sticky="w",
+            padx=(0, 3)
+        )
+
+        self.thickness_final_combo = ttk.Combobox(
+            thickness_row,
+            textvariable=self.thickness_final_var,
+            values=[
+                "25", "50", "75", "100", "150", "200",
+                "250", "300", "400", "500", "750", "1000"
+            ],
+            state="readonly",
+            width=12
+        )
+        self.thickness_final_combo.grid(
+            row=1,
+            column=3,
+            sticky="ew",
+            padx=(0, 8)
+        )
+
+        ttk.Label(
+            thickness_row,
+            text="Steps:"
+        ).grid(
+            row=1,
+            column=4,
+            sticky="w",
+            padx=(0, 3)
+        )
+
+        self.thickness_steps_combo = ttk.Combobox(
+            thickness_row,
+            textvariable=self.thickness_steps_var,
+            values=[
+                "2", "3", "4", "5", "6", "7", "8", "9", "10",
+                "12", "15", "20"
+            ],
+            state="readonly",
+            width=7
+        )
+        self.thickness_steps_combo.grid(
+            row=1,
+            column=5,
+            sticky="ew"
+        )
+
+        for column in (1, 3, 5):
+            thickness_row.columnconfigure(column, weight=1)
+
+        # ----------------------------------------------------
+        # TEMPERATURE
+        # ----------------------------------------------------
+
+        temperature_row = ttk.Frame(
+            self.study_box
+        )
+        temperature_row.pack(
+            fill="x",
+            pady=3
+        )
+
+        ttk.Label(
+            temperature_row,
+            text="Operating Temperature (K)"
+        ).grid(
+            row=0,
+            column=0,
+            columnspan=6,
+            sticky="w",
+            pady=(0, 3)
+        )
+
+        temperature_values = [
+            "233.15", "243.15", "253.15", "263.15",
+            "273.15", "283.15", "293.15", "303.15",
+            "313.15", "323.15", "333.15", "343.15",
+            "353.15", "363.15", "373.15"
+        ]
+
+        ttk.Label(
+            temperature_row,
+            text="Initial:"
+        ).grid(
+            row=1,
+            column=0,
+            sticky="w",
+            padx=(0, 3)
+        )
+
+        self.temperature_initial_combo = ttk.Combobox(
+            temperature_row,
             textvariable=self.temperature_initial_var,
-            values=[
-                "233.15", "243.15", "253.15", "263.15",
-                "273.15", "283.15", "293.15", "303.15",
-                "313.15", "323.15", "333.15", "343.15",
-                "353.15", "363.15", "373.15"
-            ],
-            state="readonly"
-        ).pack(
-            fill="x",
-            pady=(2, 6)
+            values=temperature_values,
+            state="readonly",
+            width=12
+        )
+        self.temperature_initial_combo.grid(
+            row=1,
+            column=1,
+            sticky="ew",
+            padx=(0, 8)
         )
 
         ttk.Label(
-            study_box,
-            text="Final Temperature (K):"
-        ).pack(
-            anchor="w"
+            temperature_row,
+            text="Final:"
+        ).grid(
+            row=1,
+            column=2,
+            sticky="w",
+            padx=(0, 3)
         )
 
-        ttk.Combobox(
-            study_box,
+        self.temperature_final_combo = ttk.Combobox(
+            temperature_row,
             textvariable=self.temperature_final_var,
-            values=[
-                "233.15", "243.15", "253.15", "263.15",
-                "273.15", "283.15", "293.15", "303.15",
-                "313.15", "323.15", "333.15", "343.15",
-                "353.15", "363.15", "373.15"
-            ],
-            state="readonly"
-        ).pack(
-            fill="x",
-            pady=(2, 6)
+            values=temperature_values,
+            state="readonly",
+            width=12
+        )
+        self.temperature_final_combo.grid(
+            row=1,
+            column=3,
+            sticky="ew",
+            padx=(0, 8)
         )
 
         ttk.Label(
-            study_box,
-            text="Temperature Steps:"
-        ).pack(
-            anchor="w"
+            temperature_row,
+            text="Steps:"
+        ).grid(
+            row=1,
+            column=4,
+            sticky="w",
+            padx=(0, 3)
         )
 
-        ttk.Combobox(
-            study_box,
+        self.temperature_steps_combo = ttk.Combobox(
+            temperature_row,
             textvariable=self.temperature_steps_var,
-            values=["2", "3", "4", "5", "6", "7", "8", "9", "10"],
-            state="readonly"
-        ).pack(
-            fill="x"
+            values=[
+                "2", "3", "4", "5", "6", "7", "8", "9", "10",
+                "12", "15", "20"
+            ],
+            state="readonly",
+            width=7
         )
+        self.temperature_steps_combo.grid(
+            row=1,
+            column=5,
+            sticky="ew"
+        )
+
+        for column in (1, 3, 5):
+            temperature_row.columnconfigure(column, weight=1)
 
         # ====================================================
         # GRAPH SELECTION
         # ====================================================
 
-        graph_box = ttk.LabelFrame(
-            content,
-            text="Graph Selection",
-            padding=8
-        )
-
-        graph_box.pack(
-            fill="x",
-            pady=5
-        )
-
-        self.graph_combo = ttk.Combobox(
-            graph_box,
-            textvariable=self.graph_var,
-            values=self.GRAPH_OPTIONS,
-            state="readonly"
-        )
-
-        self.graph_combo.pack(
-            fill="x"
-        )
-
-        self.graph_combo.bind(
-            "<<ComboboxSelected>>",
-            lambda event:
-            self.update_graph()
-        )
-
+        # Graphs are selected independently from the dropdown placed
+        # directly underneath each graph in the 2x2 graph grid.
         ttk.Checkbutton(
-            graph_box,
+            content,
             text="Auto update while editing",
             variable=self.auto_update_var
         ).pack(
@@ -952,17 +1198,17 @@ class RadiationDamageGUI:
         # BUTTONS
         # ====================================================
 
-        button_box = ttk.Frame(
+        self.button_box = ttk.Frame(
             content
         )
 
-        button_box.pack(
+        self.button_box.pack(
             fill="x",
             pady=10
         )
 
         ttk.Button(
-            button_box,
+            self.button_box,
             text="UPDATE GRAPH",
             style="Run.TButton",
             command=self.update_graph
@@ -972,7 +1218,7 @@ class RadiationDamageGUI:
         )
 
         ttk.Button(
-            button_box,
+            self.button_box,
             text="RESET DEFAULTS",
             command=self.reset_parameters
         ).pack(
@@ -981,7 +1227,7 @@ class RadiationDamageGUI:
         )
 
         ttk.Button(
-            button_box,
+            self.button_box,
             text="SAVE GRAPH",
             command=self.save_graph
         ).pack(
@@ -990,7 +1236,7 @@ class RadiationDamageGUI:
         )
 
         ttk.Button(
-            button_box,
+            self.button_box,
             text="EXPORT CSV",
             command=self.export_csv
         ).pack(
@@ -1142,32 +1388,204 @@ class RadiationDamageGUI:
             expand=True
         )
 
-        self.figure = Figure(
-            figsize=(8, 5),
-            dpi=100
-        )
-
-        self.canvas = FigureCanvasTkAgg(
-            self.figure,
-            master=graph_box
-        )
-
-        self.canvas.get_tk_widget().pack(
+        # 2 x 2 grid of independent graph windows.
+        grid = ttk.Frame(graph_box)
+        grid.pack(
             fill="both",
             expand=True
         )
 
-        self.toolbar = NavigationToolbar2Tk(
-            self.canvas,
-            graph_box,
-            pack_toolbar=False
+        for row in range(2):
+            grid.rowconfigure(row, weight=1)
+        for column in range(2):
+            grid.columnconfigure(column, weight=1)
+
+        for index in range(4):
+            cell = ttk.LabelFrame(
+                grid,
+                text=f"Graph {index + 1}",
+                padding=5
+            )
+            cell.grid(
+                row=index // 2,
+                column=index % 2,
+                sticky="nsew",
+                padx=4,
+                pady=4
+            )
+            cell.rowconfigure(1, weight=1)
+            cell.columnconfigure(0, weight=1)
+
+            # Small expand button in the top-right corner of each graph.
+            expand_button = ttk.Button(
+                cell,
+                text="↗",
+                width=3,
+                command=lambda i=index: self.expand_graph(i)
+            )
+            expand_button.grid(
+                row=0,
+                column=0,
+                sticky="e",
+                padx=2,
+                pady=(0, 2)
+            )
+
+            figure = Figure(
+                figsize=(5, 3),
+                dpi=100
+            )
+
+            canvas = FigureCanvasTkAgg(
+                figure,
+                master=cell
+            )
+
+            canvas_widget = canvas.get_tk_widget()
+            canvas_widget.grid(
+                row=1,
+                column=0,
+                sticky="nsew"
+            )
+
+            combo = ttk.Combobox(
+                cell,
+                textvariable=self.graph_vars[index],
+                state="readonly"
+            )
+            combo.grid(
+                row=2,
+                column=0,
+                sticky="ew",
+                pady=(5, 0)
+            )
+
+            combo.bind(
+                "<<ComboboxSelected>>",
+                lambda event, i=index: self.update_graph()
+            )
+
+            self.graph_figures.append(figure)
+            self.graph_canvases.append(canvas)
+            self.graph_combos.append(combo)
+
+        # Keep the original single-graph attributes pointing to Graph 1
+        # so the existing drawing functions continue to work unchanged.
+        self.figure = self.graph_figures[0]
+        self.canvas = self.graph_canvases[0]
+        self.graph_var = self.graph_vars[0]
+
+    # ========================================================
+    # EXPANDED GRAPH WINDOW
+    # ========================================================
+
+    def expand_graph(self, index):
+        """Open one graph in a large, detailed window."""
+
+        existing = self.expanded_windows.get(index)
+        if existing is not None:
+            try:
+                if existing.winfo_exists():
+                    existing.deiconify()
+                    existing.lift()
+                    existing.focus_force()
+                    return
+            except tk.TclError:
+                self.expanded_windows.pop(index, None)
+
+        graph_name = self.graph_vars[index].get()
+
+        if graph_name in ("", "Empty"):
+            messagebox.showinfo(
+                "No Graph Selected",
+                f"Graph {index + 1} is empty. Select a graph first."
+            )
+            return
+
+        if self.last_result is None:
+            self.update_graph(show_errors=False)
+
+        if self.last_result is None:
+            return
+
+        detail = tk.Toplevel(self.root)
+        detail.title(f"Graph {index + 1} - {graph_name}")
+        detail.geometry("1100x760")
+        detail.minsize(850, 600)
+        self.expanded_windows[index] = detail
+
+        header = ttk.Frame(detail, padding=(12, 10, 12, 4))
+        header.pack(fill="x")
+
+        ttk.Label(
+            header,
+            text=f"Graph {index + 1}",
+            font=("Segoe UI", 14, "bold")
+        ).pack(side="left")
+
+        detail_var = tk.StringVar(value=graph_name)
+        detail_combo = ttk.Combobox(
+            header,
+            textvariable=detail_var,
+            state="readonly",
+            width=65
+        )
+        detail_combo.pack(side="right", fill="x", expand=True, padx=(20, 0))
+        detail_combo["values"] = self.graph_combos[index]["values"]
+
+        plot_frame = ttk.Frame(detail, padding=(12, 4, 12, 8))
+        plot_frame.pack(fill="both", expand=True)
+
+        figure = Figure(figsize=(10, 6), dpi=100)
+        canvas = FigureCanvasTkAgg(figure, master=plot_frame)
+        canvas.get_tk_widget().pack(fill="both", expand=True)
+
+        toolbar_frame = ttk.Frame(detail)
+        toolbar_frame.pack(fill="x", padx=12, pady=(0, 8))
+        toolbar = NavigationToolbar2Tk(canvas, toolbar_frame, pack_toolbar=False)
+        toolbar.pack(side="left")
+
+        def redraw_detail(*_args):
+            selected = detail_var.get()
+            self.graph_vars[index].set(selected)
+
+            figure.clear()
+            previous_figure = self.figure
+            previous_canvas = self.canvas
+
+            try:
+                self.figure = figure
+                self.canvas = canvas
+                self._draw_selected_graph(
+                    selected,
+                    self.last_result,
+                    self.last_result["parameters"]
+                )
+                figure.tight_layout(
+                    rect=(0.02, 0.10, 0.98, 0.96)
+                )
+                canvas.draw_idle()
+            finally:
+                self.figure = previous_figure
+                self.canvas = previous_canvas
+
+            detail.title(f"Graph {index + 1} - {selected}")
+
+        def select_from_detail(_event=None):
+            self.update_graph(show_errors=False)
+            redraw_detail()
+
+        detail_combo.bind(
+            "<<ComboboxSelected>>",
+            select_from_detail
         )
 
-        self.toolbar.update()
+        def on_close():
+            self.expanded_windows.pop(index, None)
+            detail.destroy()
 
-        self.toolbar.pack(
-            fill="x"
-        )
+        detail.protocol("WM_DELETE_WINDOW", on_close)
+        redraw_detail()
 
 
     # ========================================================
@@ -1221,9 +1639,17 @@ class RadiationDamageGUI:
 
             self.vstep_var,
 
-            self.doping_study_var,
+            self.doping_initial_var,
 
-            self.thickness_study_var,
+            self.doping_final_var,
+
+            self.doping_steps_var,
+
+            self.thickness_initial_var,
+
+            self.thickness_final_var,
+
+            self.thickness_steps_var,
 
             self.temperature_initial_var,
 
@@ -1388,88 +1814,70 @@ class RadiationDamageGUI:
 
 
     # ========================================================
-    # PARSE COMPARISON VALUES
+    # COMPARISON STUDY VALUES
     # ========================================================
 
     @staticmethod
-    def parse_values(
-        text,
-        name
-    ):
-
-        try:
-
-            values = [
-
-                float(value.strip())
-
-                for value in text.split(",")
-
-                if value.strip()
-            ]
-
-        except ValueError as error:
-
-            raise ValueError(
-                f"{name} contains an invalid number."
-            ) from error
-
-        if not values:
-
-            raise ValueError(
-                f"Enter at least one {name} value."
-            )
-
-        if any(
-            value <= 0
-            for value in values
-        ):
-
-            raise ValueError(
-                f"All {name} values must be greater than zero."
-            )
-
-        return values
-
-
-    # ========================================================
-    # TEMPERATURE STUDY VALUES
-    # ========================================================
-
-    def get_temperature_study_values(
-        self
-    ):
-        try:
-            initial = float(
-                self.temperature_initial_var.get()
-            )
-            final = float(
-                self.temperature_final_var.get()
-            )
-            steps = int(
-                self.temperature_steps_var.get()
-            )
-        except ValueError as error:
-            raise ValueError(
-                "Initial temperature, final temperature and steps "
-                "must be valid values."
-            ) from error
-
+    def _validate_sweep(initial, final, steps, name):
         if initial <= 0 or final <= 0:
             raise ValueError(
-                "Temperatures must be greater than zero."
+                f"{name} initial and final values must be greater than zero."
             )
 
         if final < initial:
             raise ValueError(
-                "Final temperature must be greater than or equal to "
-                "initial temperature."
+                f"{name} final value must be greater than or equal to "
+                f"the initial value."
             )
 
         if steps < 2:
             raise ValueError(
-                "Temperature steps must be at least 2."
+                f"{name} steps must be at least 2."
             )
+
+
+    def get_doping_study_values(self):
+        try:
+            initial = float(self.doping_initial_var.get())
+            final = float(self.doping_final_var.get())
+            steps = int(self.doping_steps_var.get())
+        except ValueError as error:
+            raise ValueError(
+                "Initial doping, final doping and steps must be valid values."
+            ) from error
+
+        self._validate_sweep(
+            initial,
+            final,
+            steps,
+            "Doping"
+        )
+
+        # Doping is normally compared on a logarithmic scale.
+        return np.geomspace(
+            initial,
+            final,
+            steps
+        )
+
+
+    def get_thickness_study_values(self):
+        try:
+            initial = float(self.thickness_initial_var.get())
+            final = float(self.thickness_final_var.get())
+            steps = int(self.thickness_steps_var.get())
+        except ValueError as error:
+            raise ValueError(
+                "Initial thickness, final thickness and steps must be "
+                "valid values."
+            ) from error
+
+        self._validate_sweep(
+            initial,
+            final,
+            steps,
+            "Thickness"
+        )
 
         return np.linspace(
             initial,
@@ -1477,6 +1885,72 @@ class RadiationDamageGUI:
             steps
         )
 
+
+    def get_temperature_study_values(self):
+        try:
+            initial = float(self.temperature_initial_var.get())
+            final = float(self.temperature_final_var.get())
+            steps = int(self.temperature_steps_var.get())
+        except ValueError as error:
+            raise ValueError(
+                "Initial temperature, final temperature and steps "
+                "must be valid values."
+            ) from error
+
+        self._validate_sweep(
+            initial,
+            final,
+            steps,
+            "Temperature"
+        )
+
+        return np.linspace(
+            initial,
+            final,
+            steps
+        )
+
+
+    # ========================================================
+    # COMPARISON CONTROL VISIBILITY / GRAPH OPTIONS
+    # ========================================================
+
+    def refresh_comparison_controls(self):
+        # The entire comparison section is controlled by one
+        # checkbox: "Compare Values".
+        self.study_box.pack_forget()
+
+        comparison_enabled = self.compare_values_var.get()
+
+        if comparison_enabled:
+            # Comparison Values remains before the graph-related controls.
+            self.study_box.pack(
+                before=self.button_box,
+                fill="x",
+                pady=5
+            )
+
+        options = ["Empty"] + list(self.BASE_GRAPH_OPTIONS)
+
+        if comparison_enabled:
+            options.extend(self.DOPING_GRAPH_OPTIONS)
+            options.extend(self.THICKNESS_GRAPH_OPTIONS)
+            options.extend(self.TEMPERATURE_GRAPH_OPTIONS)
+
+        # Update all four dropdowns independently.
+        for index, combo in enumerate(self.graph_combos):
+            current_graph = self.graph_vars[index].get()
+            combo["values"] = options
+
+            if index == 0:
+                if current_graph not in options or current_graph == "Empty":
+                    self.graph_vars[index].set(self.BASE_GRAPH_OPTIONS[0])
+            else:
+                if current_graph not in options:
+                    self.graph_vars[index].set("Empty")
+
+        # Redraw immediately after enabling/disabling Compare Values.
+        self.update_graph(show_errors=False)
 
     # ========================================================
     # CREATE DETECTOR
@@ -1756,218 +2230,142 @@ class RadiationDamageGUI:
     # UPDATE GRAPH
     # ========================================================
 
+    def _draw_selected_graph(
+        self,
+        graph_name,
+        result,
+        params
+    ):
+        """Draw one selected graph using the existing drawing methods."""
+        if graph_name in ("", "Empty"):
+            return
+
+        if graph_name == "Capacitance vs Reverse Bias":
+            self.draw_basic_capacitance(result)
+
+        elif graph_name == "Leakage Current vs Reverse Bias":
+            self.draw_basic_leakage(result)
+
+        elif graph_name == "Combined Capacitance & Leakage Current vs Reverse Bias":
+            self.draw_combined(result)
+
+        elif graph_name == "Capacitance vs Reverse Bias - Different Doping":
+            values = self.get_doping_study_values()
+            self.draw_doping_capacitance(result, values)
+
+        elif graph_name == "Leakage Current vs Reverse Bias - Different Doping":
+            values = self.get_doping_study_values()
+            self.draw_doping_leakage(result, values, params)
+
+        elif graph_name == "Capacitance vs Reverse Bias - Additional/High-Resolution Doping":
+            values = self.get_doping_study_values()
+            self.draw_high_resolution_doping_capacitance(
+                result, values, params
+            )
+
+        elif graph_name == "Leakage Current vs Reverse Bias - Additional/High-Resolution Doping":
+            values = self.get_doping_study_values()
+            self.draw_high_resolution_doping_leakage(
+                result, values, params
+            )
+
+        elif graph_name == "Capacitance vs Reverse Bias - Different Thickness":
+            values = self.get_thickness_study_values()
+            self.draw_thickness_capacitance(
+                result, values, params
+            )
+
+        elif graph_name == "Leakage Current vs Reverse Bias - Different Thickness":
+            values = self.get_thickness_study_values()
+            self.draw_thickness_leakage(
+                result, values, params
+            )
+
+        elif graph_name == "Capacitance vs Reverse Bias - Different Temperature":
+            values = self.get_temperature_study_values()
+            self.draw_temperature_capacitance(
+                result, values
+            )
+
+        elif graph_name == "Leakage Current vs Reverse Bias - Different Temperature":
+            values = self.get_temperature_study_values()
+            self.draw_temperature_leakage(
+                result, values, params
+            )
+
+    # ========================================================
+    # UPDATE GRAPH
+    # ========================================================
+
     def update_graph(
         self,
         show_errors=True
     ):
-
         try:
-
-            # ------------------------------------------------
-            # VERY IMPORTANT:
-            #
             # Read the current values from the GUI fields.
-            # ------------------------------------------------
-
             params = self.read_parameters()
 
-            # ------------------------------------------------
-            # Recalculate everything.
-            # ------------------------------------------------
-
-            result = self.run_simulation(
-                params
-            )
-
+            # Run the simulation only once, then use the result
+            # for all four graph windows.
+            result = self.run_simulation(params)
             self.last_result = result
 
-            graph_name = self.graph_var.get()
+            for index in range(4):
+                figure = self.graph_figures[index]
+                canvas = self.graph_canvases[index]
+                graph_name = self.graph_vars[index].get()
 
-            # ------------------------------------------------
-            # Completely clear previous figure
-            # ------------------------------------------------
+                # Existing drawing functions use self.figure and
+                # self.canvas, so point them at the current window.
+                self.figure = figure
+                self.canvas = canvas
 
-            self.figure.clear()
+                figure.clear()
 
-            # ------------------------------------------------
-            # Draw selected graph
-            # ------------------------------------------------
-
-            if graph_name == (
-                "Capacitance vs Reverse Bias"
-            ):
-
-                self.draw_basic_capacitance(
-                    result
-                )
-
-            elif graph_name == (
-                "Leakage Current vs Reverse Bias"
-            ):
-
-                self.draw_basic_leakage(
-                    result
-                )
-
-            elif graph_name == (
-                "Combined Capacitance & Leakage Current vs Reverse Bias"
-            ):
-
-                self.draw_combined(
-                    result
-                )
-
-            elif graph_name == (
-                "Capacitance vs Reverse Bias - Different Doping"
-            ):
-
-                values = self.parse_values(
-                    self.doping_study_var.get(),
-                    "Doping"
-                )
-
-                self.draw_doping_capacitance(
+                self._draw_selected_graph(
+                    graph_name,
                     result,
-                    values
-                )
-
-            elif graph_name == (
-                "Leakage Current vs Reverse Bias - Different Doping"
-            ):
-
-                values = self.parse_values(
-                    self.doping_study_var.get(),
-                    "Doping"
-                )
-
-                self.draw_doping_leakage(
-                    result,
-                    values,
                     params
                 )
 
-            elif graph_name == (
-                "Capacitance vs Reverse Bias - Additional/High-Resolution Doping"
-            ):
-
-                values = self.parse_values(
-                    self.doping_study_var.get(),
-                    "Doping"
+                # Reserve a little room for comparison legends placed
+                # below the plot so they never cover the data.
+                figure.tight_layout(
+                    rect=(0.02, 0.12, 0.98, 0.96)
                 )
+                canvas.draw()
+                canvas.flush_events()
 
-                self.draw_high_resolution_doping_capacitance(
-                    result,
-                    values,
-                    params
+            # Keep Graph 1 as the active figure for save-graph support
+            # and compatibility with the existing drawing code.
+            self.figure = self.graph_figures[0]
+            self.canvas = self.graph_canvases[0]
+            self.graph_var = self.graph_vars[0]
+
+            self.update_results(result)
+
+            selected = [
+                name for name in self.graph_vars
+                if name.get() not in ("", "Empty")
+            ]
+
+            if selected:
+                self.status_var.set(
+                    f"Updated: {len(selected)} graph(s)"
                 )
-
-            elif graph_name == (
-                "Leakage Current vs Reverse Bias - Additional/High-Resolution Doping"
-            ):
-
-                values = self.parse_values(
-                    self.doping_study_var.get(),
-                    "Doping"
-                )
-
-                self.draw_high_resolution_doping_leakage(
-                    result,
-                    values,
-                    params
-                )
-
-            elif graph_name == (
-                "Capacitance vs Reverse Bias - Different Thickness"
-            ):
-
-                values = self.parse_values(
-                    self.thickness_study_var.get(),
-                    "Thickness"
-                )
-
-                self.draw_thickness_capacitance(
-                    result,
-                    values,
-                    params
-                )
-
-            elif graph_name == (
-                "Leakage Current vs Reverse Bias - Different Thickness"
-            ):
-
-                values = self.parse_values(
-                    self.thickness_study_var.get(),
-                    "Thickness"
-                )
-
-                self.draw_thickness_leakage(
-                    result,
-                    values,
-                    params
-                )
-
-            elif graph_name == (
-                "Capacitance vs Reverse Bias - Different Temperature"
-            ):
-
-                values = self.get_temperature_study_values()
-
-                self.draw_temperature_capacitance(
-                    result,
-                    values
-                )
-
-            elif graph_name == (
-                "Leakage Current vs Reverse Bias - Different Temperature"
-            ):
-
-                values = self.get_temperature_study_values()
-
-                self.draw_temperature_leakage(
-                    result,
-                    values,
-                    params
-                )
-
-            # ------------------------------------------------
-            # Redraw
-            # ------------------------------------------------
-
-            self.figure.tight_layout()
-
-            self.canvas.draw()
-
-            self.canvas.flush_events()
-
-            # ------------------------------------------------
-            # Update values
-            # ------------------------------------------------
-
-            self.update_results(
-                result
-            )
-
-            # ------------------------------------------------
-            # Status
-            # ------------------------------------------------
-
-            self.status_var.set(
-                f"Updated: {graph_name}"
-            )
+            else:
+                self.status_var.set("No graphs selected")
 
         except Exception as error:
-
             self.status_var.set(
                 f"Error: {error}"
             )
 
             if show_errors:
-
                 messagebox.showerror(
                     "Simulation Error",
                     str(error)
                 )
-
 
     # ========================================================
     # AXIS FORMAT
@@ -1982,27 +2380,54 @@ class RadiationDamageGUI:
 
         ax.set_title(
             title,
-            fontsize=14
+            fontsize=11,
+            fontweight="bold",
+            pad=8
         )
 
         ax.set_xlabel(
             "Reverse Bias Voltage (V)",
-            fontsize=12
+            fontsize=9
         )
 
         ax.set_ylabel(
             ylabel,
-            fontsize=12
+            fontsize=9
         )
 
         ax.tick_params(
-            labelsize=10
+            labelsize=8,
+            pad=2
         )
 
         ax.grid(
             True,
             linestyle="--",
-            alpha=0.3
+            linewidth=0.7,
+            alpha=0.25
+        )
+
+        ax.margins(
+            x=0.03,
+            y=0.08
+        )
+
+        ax.spines["top"].set_visible(False)
+        ax.spines["right"].set_visible(False)
+
+    def style_legend(
+        self,
+        ax,
+        ncol=3,
+        fontsize=7
+    ):
+        ax.legend(
+            loc="upper center",
+            bbox_to_anchor=(0.5, -0.24),
+            ncol=ncol,
+            fontsize=fontsize,
+            frameon=False,
+            borderaxespad=0.0
         )
 
 
@@ -2032,7 +2457,7 @@ class RadiationDamageGUI:
 
             ax,
 
-            "Capacitance vs Reverse Bias Voltage",
+            "Capacitance vs Reverse Bias",
 
             "Capacitance (pF)"
         )
@@ -2064,7 +2489,7 @@ class RadiationDamageGUI:
 
             ax,
 
-            "Leakage Current vs Reverse Bias Voltage",
+            "Leakage Current vs Reverse Bias",
 
             "Leakage Current (mA)"
         )
@@ -2097,26 +2522,38 @@ class RadiationDamageGUI:
             label="Leakage Current"
         )
 
-        ax1.set_xlabel("Reverse Bias Voltage (V)")
-        ax1.set_ylabel("Capacitance (pF)", color="blue")
-        ax2.set_ylabel("Leakage Current (mA)", color="red")
+        ax1.set_xlabel("Reverse Bias Voltage (V)", fontsize=9)
+        ax1.set_ylabel("Capacitance (pF)", color="blue", fontsize=9)
+        ax2.set_ylabel("Leakage Current (mA)", color="red", fontsize=9)
 
-        ax1.tick_params(axis="y", labelcolor="blue")
-        ax2.tick_params(axis="y", labelcolor="red")
+        ax1.tick_params(axis="y", labelcolor="blue", labelsize=8)
+        ax2.tick_params(axis="y", labelcolor="red", labelsize=8)
+        ax1.tick_params(axis="x", labelsize=8)
 
         ax1.set_ylim(0, max(result["capacitance"] * 1e12) * 1.08)
         ax2.set_ylim(0, max(result["leakage"] * 1e3) * 1.08)
 
         ax1.set_title(
-            "Capacitance and Leakage Current vs Reverse Bias Voltage"
+            "Capacitance & Leakage Current vs Reverse Bias",
+            fontsize=11,
+            fontweight="bold",
+            pad=8
         )
 
-        ax1.grid(True, linestyle="--", alpha=0.3)
+        ax1.grid(True, linestyle="--", linewidth=0.7, alpha=0.25)
+        ax1.spines["top"].set_visible(False)
+        ax1.spines["right"].set_visible(False)
 
         lines = line1 + line2
-        ax1.legend(lines, [l.get_label() for l in lines], loc="best")
-
-        self.figure.tight_layout()
+        ax1.legend(
+            lines,
+            [l.get_label() for l in lines],
+            loc="upper center",
+            bbox_to_anchor=(0.5, -0.22),
+            ncol=2,
+            fontsize=7,
+            frameon=False
+        )
 
     # ========================================================
     # GRAPH 4
@@ -2165,13 +2602,15 @@ class RadiationDamageGUI:
             ax,
 
             "Capacitance vs Reverse Bias\n"
-            "for Different Doping Concentrations",
+            "Different Doping",
 
             "Capacitance (pF)"
         )
 
-        ax.legend(
-            fontsize=8
+        self.style_legend(
+            ax,
+            ncol=3,
+            fontsize=7
         )
 
 
@@ -2234,13 +2673,15 @@ class RadiationDamageGUI:
             ax,
 
             "Leakage Current vs Reverse Bias\n"
-            "for Different Doping Concentrations",
+            "Different Doping",
 
             "Leakage Current (mA)"
         )
 
-        ax.legend(
-            fontsize=8
+        self.style_legend(
+            ax,
+            ncol=3,
+            fontsize=7
         )
 
 
@@ -2292,13 +2733,15 @@ class RadiationDamageGUI:
             ax,
 
             "Capacitance vs Reverse Bias\n"
-            "for Different Detector Thicknesses",
+            "Different Thickness",
 
             "Capacitance (pF)"
         )
 
-        ax.legend(
-            fontsize=8
+        self.style_legend(
+            ax,
+            ncol=3,
+            fontsize=7
         )
 
 
@@ -2364,13 +2807,15 @@ class RadiationDamageGUI:
             ax,
 
             "Leakage Current vs Reverse Bias\n"
-            "for Different Detector Thicknesses",
+            "Different Thickness",
 
             "Leakage Current (mA)"
         )
 
-        ax.legend(
-            fontsize=8
+        self.style_legend(
+            ax,
+            ncol=3,
+            fontsize=7
         )
 
 
@@ -2435,13 +2880,14 @@ class RadiationDamageGUI:
         self.style_axis(
             ax,
             "Capacitance vs Reverse Bias\n"
-            "Additional / High-Resolution Doping Study",
+            "High-Resolution Doping",
             "Capacitance (pF)"
         )
 
-        ax.legend(
-            fontsize=7,
-            ncol=2
+        self.style_legend(
+            ax,
+            ncol=2,
+            fontsize=6.5
         )
 
 
@@ -2488,13 +2934,14 @@ class RadiationDamageGUI:
         self.style_axis(
             ax,
             "Leakage Current vs Reverse Bias\n"
-            "Additional / High-Resolution Doping Study",
+            "High-Resolution Doping",
             "Leakage Current (mA)"
         )
 
-        ax.legend(
-            fontsize=7,
-            ncol=2
+        self.style_legend(
+            ax,
+            ncol=2,
+            fontsize=6.5
         )
 
 
@@ -2538,13 +2985,15 @@ class RadiationDamageGUI:
             ax,
 
             "Capacitance vs Reverse Bias\n"
-            "for Different Operating Temperatures",
+            "Different Temperature",
 
             "Capacitance (pF)"
         )
 
-        ax.legend(
-            fontsize=8
+        self.style_legend(
+            ax,
+            ncol=3,
+            fontsize=7
         )
 
 
@@ -2602,13 +3051,15 @@ class RadiationDamageGUI:
             ax,
 
             "Leakage Current vs Reverse Bias\n"
-            "for Different Operating Temperatures",
+            "Different Temperature",
 
             "Leakage Current (mA)"
         )
 
-        ax.legend(
-            fontsize=8
+        self.style_legend(
+            ax,
+            ncol=3,
+            fontsize=7
         )
 
 
@@ -2697,20 +3148,35 @@ class RadiationDamageGUI:
                 str(config.REVERSE_VOLTAGE_STEP)
             )
 
-        self.doping_study_var.set(
-            ", ".join(
-                f"{value:.6g}"
-                for value in
-                config.DOPING_STUDY_VALUES
-            )
+        # Reset the complete comparison section.
+        self.compare_values_var.set(False)
+
+        doping_values = config.DOPING_STUDY_VALUES
+
+        self.doping_initial_var.set(
+            f"{min(doping_values):.6g}"
         )
 
-        self.thickness_study_var.set(
-            ", ".join(
-                str(value)
-                for value in
-                config.THICKNESS_STUDY_VALUES_UM
-            )
+        self.doping_final_var.set(
+            f"{max(doping_values):.6g}"
+        )
+
+        self.doping_steps_var.set(
+            str(len(doping_values))
+        )
+
+        thickness_values = config.THICKNESS_STUDY_VALUES_UM
+
+        self.thickness_initial_var.set(
+            str(min(thickness_values))
+        )
+
+        self.thickness_final_var.set(
+            str(max(thickness_values))
+        )
+
+        self.thickness_steps_var.set(
+            str(len(thickness_values))
         )
 
         temperature_values = config.TEMPERATURE_STUDY_VALUES_K
@@ -2727,9 +3193,14 @@ class RadiationDamageGUI:
             str(len(temperature_values))
         )
 
-        self.graph_var.set(
-            self.GRAPH_OPTIONS[0]
-        )
+        self.refresh_comparison_controls()
+
+        for index, graph_var in enumerate(self.graph_vars):
+            graph_var.set(
+                self.BASE_GRAPH_OPTIONS[0]
+                if index == 0
+                else "Empty"
+            )
 
         self.update_graph()
 
