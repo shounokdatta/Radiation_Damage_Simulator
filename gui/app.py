@@ -2328,10 +2328,15 @@ class RadiationDamageGUI:
                     params
                 )
 
-                # Reserve a little room for comparison legends placed
-                # below the plot so they never cover the data.
+                # Small graph panels are intentionally minimal:
+                # show ONLY the plotted curve(s) and numeric axis scale.
+                # Titles, axis names, legends, and grid lines are reserved
+                # for the expanded graph window.
+                self._compact_small_graph(figure)
+
                 figure.tight_layout(
-                    rect=(0.02, 0.12, 0.98, 0.96)
+                    rect=(0.03, 0.03, 0.99, 0.99),
+                    pad=0.5
                 )
                 canvas.draw()
                 canvas.flush_events()
@@ -2366,6 +2371,85 @@ class RadiationDamageGUI:
                     "Simulation Error",
                     str(error)
                 )
+
+    # ========================================================
+    # COMPACT SMALL GRAPH PANELS
+    # ========================================================
+
+    @staticmethod
+    def _compact_small_graph(figure):
+        """Small graph: show ONLY curves and numeric tick scales.
+
+        This deliberately hides every descriptive text element from the
+        plotting area. The expanded graph is responsible for titles, axis
+        names, legends and grid lines.
+        """
+
+        # Miniature panels use a compact font throughout the Matplotlib
+        # figure.  Detailed typography remains available in the expanded
+        # window.
+        for text_obj in figure.findobj(lambda obj: hasattr(obj, "get_fontsize")):
+            try:
+                text_obj.set_fontsize(5)
+            except Exception:
+                pass
+
+        for ax in list(figure.axes):
+            # Hide title and axis-name text completely.
+            ax.set_title("")
+            ax.set_xlabel("")
+            ax.set_ylabel("")
+
+            ax.title.set_visible(False)
+            ax.xaxis.label.set_visible(False)
+            ax.yaxis.label.set_visible(False)
+
+            # Hide legends from ALL axes, including twinned axes.
+            legend = ax.get_legend()
+            if legend is not None:
+                legend.remove()
+
+            # No grid in the compact panel.
+            ax.grid(False)
+
+            # Keep only the numeric tick labels.
+            ax.tick_params(
+                axis="x",
+                which="both",
+                labelbottom=True,
+                bottom=True,
+                labeltop=False,
+                top=False,
+                labelsize=7,
+                pad=1
+            )
+            ax.tick_params(
+                axis="y",
+                which="both",
+                labelleft=True,
+                left=True,
+                labelright=True,
+                right=True,
+                labelsize=7,
+                pad=1
+            )
+
+            # Hide scientific-notation axis-name-like offset text only if it
+            # is empty; otherwise retain it because it is part of the numeric
+            # scale (e.g. 1e4).
+            ax.xaxis.get_offset_text().set_fontsize(5)
+            ax.yaxis.get_offset_text().set_fontsize(5)
+
+            # Give the actual plot more room because no labels are needed.
+            ax.margins(x=0.03, y=0.08)
+
+        figure.subplots_adjust(
+            left=0.08,
+            right=0.98,
+            bottom=0.10,
+            top=0.98
+        )
+
 
     # ========================================================
     # AXIS FORMAT
